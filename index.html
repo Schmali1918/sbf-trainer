@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sportbootführerschein Lernprogramm</title>
+    <style>
+        /* ============================================
+               GLOBALES DARK DESIGN
+               ============================================ */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #1c2333;
+            --bg-input: #0d1117;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --text-muted: #484f58;
+            --border-color: #30363d;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --accent-orange: #d29922;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            --radius: 12px;
+            --transition: 0.25s ease;
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        #app {
+            max-width: 960px;
+            width: 100%;
+        }
+
+        /* ============================================
+               HEADER
+               ============================================ */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        header h1 span {
+            color: var(--accent-blue);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+            white-space: nowrap;
+        }
+        .btn:hover {
+            background: var(--border-color);
+        }
+        .btn-primary {
+            background: var(--accent-blue);
+            color: #0d1117;
+            border-color: var(--accent-blue);
+        }
+        .btn-primary:hover {
+            opacity: 0.85;
+            background: var(--accent-blue);
+        }
+        .btn-danger {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+        .btn-danger:hover {
+            background: var(--accent-red);
+            color: #0d1117;
+        }
+        .btn-success {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        .btn-success:hover {
+            background: var(--accent-green);
+            color: #0d1117;
+        }
+
+        /* ============================================
+               NAVIGATION / KATEGORIEN
+               ============================================ */
+        .category-nav {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .category-nav .btn {
+            flex: 1 1 120px;
+            text-align: center;
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            position: relative;
+        }
+        .category-nav .btn.active {
+            border-color: var(--accent-blue);
+            background: var(--bg-card);
+            box-shadow: 0 0 0 1px var(--accent-blue);
+        }
+        .category-nav .btn .badge {
+            display: inline-block;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            padding: 1px 8px;
+            border-radius: 20px;
+            margin-left: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .category-nav .btn.active .badge {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        /* ============================================
+               FORTSCHRITTSBALKEN (Übersicht)
+               ============================================ */
+        .progress-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+            background: var(--bg-secondary);
+            padding: 16px 20px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .progress-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .progress-item .label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+        .progress-item .label span:last-child {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .progress-track {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-track .fill {
+            height: 100%;
+            background: var(--accent-blue);
+            border-radius: 4px;
+            transition: width 0.4s ease;
+            width: 0%;
+        }
+
+        /* ============================================
+               CARD / FRAGE
+               ============================================ */
+        .question-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .question-header .q-num {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: var(--bg-primary);
+            padding: 2px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .question-header .q-status {
+            font-size: 0.8rem;
+            padding: 2px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .question-header .q-status.correct {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        .question-header .q-status.wrong {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+        .question-header .q-status.unanswered {
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .question-image {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 8px;
+            margin: 12px 0 16px 0;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            display: none;
+        }
+        .question-image.visible {
+            display: block;
+        }
+
+        /* ============================================
+               ANTWORTEN
+               ============================================ */
+        .answers {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 16px 0 20px 0;
+        }
+
+        .answer-btn {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 18px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font);
+            text-align: left;
+            width: 100%;
+        }
+        .answer-btn:hover:not(.disabled) {
+            border-color: var(--accent-blue);
+            background: var(--bg-input);
+        }
+        .answer-btn .letter {
+            font-weight: 700;
+            color: var(--text-secondary);
+            min-width: 24px;
+        }
+        .answer-btn.correct-answer {
+            border-color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.12);
+        }
+        .answer-btn.correct-answer .letter {
+            color: var(--accent-green);
+        }
+        .answer-btn.wrong-answer {
+            border-color: var(--accent-red);
+            background: rgba(248, 81, 73, 0.12);
+        }
+        .answer-btn.wrong-answer .letter {
+            color: var(--accent-red);
+        }
+        .answer-btn.disabled {
+            cursor: default;
+            opacity: 0.85;
+        }
+        .answer-btn.show-correct {
+            border-color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.06);
+        }
+
+        /* ============================================
+               FEEDBACK / EXPLANATION
+               ============================================ */
+        .feedback {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 0.95rem;
+            display: none;
+        }
+        .feedback.visible {
+            display: block;
+        }
+        .feedback.correct {
+            border: 1px solid var(--accent-green);
+            background: rgba(63, 185, 80, 0.08);
+            color: var(--accent-green);
+        }
+        .feedback.wrong {
+            border: 1px solid var(--accent-red);
+            background: rgba(248, 81, 73, 0.08);
+            color: var(--accent-red);
+        }
+
+        /* ============================================
+               NAVIGATION UNTEN
+               ============================================ */
+        .question-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .question-nav .btn {
+            min-width: 100px;
+            text-align: center;
+        }
+        .question-nav .counter {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* ============================================
+               EMPTY STATE
+               ============================================ */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state h2 {
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        /* ============================================
+               RESPONSIVE
+               ============================================ */
+        @media (max-width: 640px) {
+            header h1 {
+                font-size: 1.1rem;
+            }
+            .question-card {
+                padding: 16px;
+            }
+            .question-text {
+                font-size: 1rem;
+            }
+            .answer-btn {
+                font-size: 0.9rem;
+                padding: 10px 14px;
+            }
+            .progress-overview {
+                grid-template-columns: 1fr 1fr;
+                padding: 12px 16px;
+            }
+            .category-nav .btn {
+                flex: 1 1 80px;
+                font-size: 0.8rem;
+                padding: 6px 12px;
+            }
+            .question-nav .btn {
+                min-width: 70px;
+                font-size: 0.8rem;
+                padding: 6px 12px;
+            }
+        }
+        @media (max-width: 440px) {
+            .progress-overview {
+                grid-template-columns: 1fr;
+            }
+            .header-actions .btn {
+                font-size: 0.75rem;
+                padding: 6px 12px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <!-- HEADER -->
+        <header>
+            <h1>⛵ SBF <span>Lernprogramm</span></h1>
+            <div class="header-actions">
+                <button class="btn btn-danger" id="resetBtn" title="Fortschritt zurücksetzen">✕ Zurücksetzen</button>
+            </div>
+        </header>
+
+        <!-- KATEGORIEN -->
+        <nav class="category-nav" id="categoryNav">
+            <button class="btn active" data-category="basis">Basis <span class="badge" id="badge-basis">0/72</span></button>
+            <button class="btn" data-category="binnen">Binnen <span class="badge" id="badge-binnen">0/181</span></button>
+            <button class="btn" data-category="see">See <span class="badge" id="badge-see">0/213</span></button>
+        </nav>
+
+        <!-- FORTSCHRITTSÜBERSICHT -->
+        <div class="progress-overview" id="progressOverview">
+            <div class="progress-item">
+                <div class="label"><span>Basis</span><span id="prog-basis">0%</span></div>
+                <div class="progress-track"><div class="fill" id="fill-basis"></div></div>
+            </div>
+            <div class="progress-item">
+                <div class="label"><span>Binnen</span><span id="prog-binnen">0%</span></div>
+                <div class="progress-track"><div class="fill" id="fill-binnen"></div></div>
+            </div>
+            <div class="progress-item">
+                <div class="label"><span>See</span><span id="prog-see">0%</span></div>
+                <div class="progress-track"><div class="fill" id="fill-see"></div></div>
+            </div>
+        </div>
+
+        <!-- FRAGE-CARD -->
+        <div class="question-card" id="questionCard">
+            <div class="question-header">
+                <span class="q-num" id="qNum">Frage 1</span>
+                <span class="q-status unanswered" id="qStatus">✕ unbeantwortet</span>
+            </div>
+            <div class="question-text" id="qText">Lade Frage ...</div>
+            <img class="question-image" id="qImage" alt="Bild zur Frage" />
+            <div class="answers" id="answersContainer"></div>
+            <div class="feedback" id="feedback"></div>
+            <div class="question-nav">
+                <button class="btn" id="prevBtn">◀ Zurück</button>
+                <span class="counter" id="qCounter">1 / 72</span>
+                <button class="btn" id="nextBtn">Weiter ▶</button>
+            </div>
+        </div>
+
+        <!-- EMPTY STATE (wird bei Fehlern gezeigt) -->
+        <div class="empty-state" id="emptyState" style="display:none;">
+            <h2>⚠️ Keine Fragen gefunden</h2>
+            <p>Bitte stellen Sie sicher, dass die JavaScript-Dateien korrekt eingebunden sind.</p>
+        </div>
+    </div>
+
+    <!-- ============================================
+    EINBINDUNG ALLER 6 JS-DATEIEN
+    ============================================ -->
+    <script src="fragen_basis.js"></script>
+    <script src="fragen_binnen.js"></script>
+    <script src="fragen_see.js"></script>
+    <script src="bilder_basis.js"></script>
+    <script src="bilder_binnen.js"></script>
+    <script src="bilder_see.js"></script>
+
+    <script>
+        // ============================================
+        // HAUPTANWENDUNG
+        // ============================================
+
+        (function() {
+            'use strict';
+
+            // -------- Konfiguration --------
+            const STORAGE_KEY = 'sbf_learn_progress';
+
+            // Kategorien mit ihren Fragen-Arrays und Bild-Maps
+            const CATEGORIES = {
+                basis: {
+                    name: 'Basis',
+                    fragen: typeof fragenBasis !== 'undefined' ? fragenBasis : [],
+                    bilder: typeof imageMapBasis !== 'undefined' ? imageMapBasis : {}
+                },
+                binnen: {
+                    name: 'Binnen',
+                    fragen: typeof fragenBinnen !== 'undefined' ? fragenBinnen : [],
+                    bilder: typeof imageMapBinnen !== 'undefined' ? imageMapBinnen : {}
+                },
+                see: {
+                    name: 'See',
+                    fragen: typeof fragenSee !== 'undefined' ? fragenSee : [],
+                    bilder: typeof imageMapSee !== 'undefined' ? imageMapSee : {}
+                }
+            };
+
+            // -------- Zustand --------
+            let currentCategory = 'basis';
+            let currentIndex = 0;
+            let progress = {}; // { category: { frageId: 'correct'|'wrong' } }
+            let isAnswered = false;
+            let answeredId = null; // ID der aktuell beantworteten Frage
+
+            // DOM-Referenzen
+            const $ = (sel) => document.querySelector(sel);
+            const $$ = (sel) => document.querySelectorAll(sel);
+
+            const qNum = $('#qNum');
+            const qStatus = $('#qStatus');
+            const qText = $('#qText');
+            const qImage = $('#qImage');
+            const answersContainer = $('#answersContainer');
+            const feedback = $('#feedback');
+            const prevBtn = $('#prevBtn');
+            const nextBtn = $('#nextBtn');
+            const qCounter = $('#qCounter');
+            const emptyState = $('#emptyState');
+            const questionCard = $('#questionCard');
+            const resetBtn = $('#resetBtn');
+
+            // -------- Hilfsfunktionen --------
+            function getCategoryKeys() {
+                return Object.keys(CATEGORIES);
+            }
+
+            function getFragen(cat) {
+                return CATEGORIES[cat]?.fragen || [];
+            }
+
+            function getBilder(cat) {
+                return CATEGORIES[cat]?.bilder || {};
+            }
+
+            function getCurrentFragen() {
+                return getFragen(currentCategory);
+            }
+
+            function getCurrentBilder() {
+                return getBilder(currentCategory);
+            }
+
+            function getCurrentFrage() {
+                const fragen = getCurrentFragen();
+                if (currentIndex < 0 || currentIndex >= fragen.length) return null;
+                return fragen[currentIndex];
+            }
+
+            // -------- Fortschritt (Local Storage) --------
+            function loadProgress() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (typeof parsed === 'object' && parsed !== null) {
+                            progress = parsed;
+                            return;
+                        }
+                    }
+                } catch (_) { /* ignore */ }
+                progress = {};
+            }
+
+            function saveProgress() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+                } catch (_) { /* ignore */ }
+            }
+
+            function getCategoryProgress(cat) {
+                return progress[cat] || {};
+            }
+
+            function setQuestionResult(cat, frageId, result) {
+                if (!progress[cat]) progress[cat] = {};
+                progress[cat][frageId] = result;
+                saveProgress();
+            }
+
+            function getQuestionResult(cat, frageId) {
+                const p = progress[cat];
+                if (!p) return null;
+                return p[frageId] || null;
+            }
+
+            function getCategoryStats(cat) {
+                const fragen = getFragen(cat);
+                const catProg = getCategoryProgress(cat);
+                let correct = 0;
+                let wrong = 0;
+                let answered = 0;
+                for (const f of fragen) {
+                    const res = catProg[f.id];
+                    if (res === 'correct') { correct++;
+                        answered++; } else if (res === 'wrong') { wrong++;
+                        answered++; }
+                }
+                return { total: fragen.length, correct, wrong, answered };
+            }
+
+            function getCategoryPercent(cat) {
+                const stats = getCategoryStats(cat);
+                if (stats.total === 0) return 0;
+                return Math.round((stats.answered / stats.total) * 100);
+            }
+
+            // -------- Fortschrittsanzeige aktualisieren --------
+            function updateProgressBars() {
+                for (const cat of getCategoryKeys()) {
+                    const pct = getCategoryPercent(cat);
+                    const fill = document.getElementById('fill-' + cat);
+                    const progLabel = document.getElementById('prog-' + cat);
+                    const badge = document.getElementById('badge-' + cat);
+                    if (fill) fill.style.width = pct + '%';
+                    if (progLabel) progLabel.textContent = pct + '%';
+                    if (badge) {
+                        const stats = getCategoryStats(cat);
+                        badge.textContent = stats.answered + '/' + stats.total;
+                    }
+                }
+            }
+
+            // -------- Frage anzeigen --------
+            function renderQuestion() {
+                const fragen = getCurrentFragen();
+                if (!fragen || fragen.length === 0) {
+                    questionCard.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                questionCard.style.display = 'block';
+                emptyState.style.display = 'none';
+
+                // Index begrenzen
+                if (currentIndex < 0) currentIndex = 0;
+                if (currentIndex >= fragen.length) currentIndex = fragen.length - 1;
+
+                const frage = getCurrentFrage();
+                if (!frage) {
+                    qText.textContent = '⚠️ Frage nicht gefunden.';
+                    answersContainer.innerHTML = '';
+                    return;
+                }
+
+                // Status zurücksetzen
+                isAnswered = false;
+                answeredId = null;
+
+                // Frage-ID prüfen
+                const result = getQuestionResult(currentCategory, frage.id);
+
+                // Nummer & Status
+                qNum.textContent = 'Frage ' + frage.nummer;
+                qStatus.className = 'q-status';
+                if (result === 'correct') {
+                    qStatus.textContent = '✅ richtig';
+                    qStatus.classList.add('correct');
+                } else if (result === 'wrong') {
+                    qStatus.textContent = '❌ falsch';
+                    qStatus.classList.add('wrong');
+                } else {
+                    qStatus.textContent = '✕ unbeantwortet';
+                    qStatus.classList.add('unanswered');
+                }
+
+                // Fragetext
+                qText.textContent = frage.frage;
+
+                // Bild
+                const bilder = getCurrentBilder();
+                if (frage.bild && bilder[frage.bild]) {
+                    qImage.src = bilder[frage.bild];
+                    qImage.className = 'question-image visible';
+                } else {
+                    qImage.className = 'question-image';
+                    qImage.src = '';
+                }
+
+                // Antworten
+                answersContainer.innerHTML = '';
+                const antworten = frage.antworten || [];
+                const labels = ['a', 'b', 'c', 'd'];
+
+                antworten.forEach((text, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'answer-btn';
+                    btn.dataset.index = idx;
+                    btn.innerHTML = `<span class="letter">${labels[idx]}</span><span>${text}</span>`;
+
+                    // Wenn bereits beantwortet, Zustand anzeigen
+                    if (result) {
+                        btn.classList.add('disabled');
+                        const isCorrect = (idx === 0); // Antwort a ist immer richtig
+                        if (isCorrect) {
+                            btn.classList.add('correct-answer');
+                        }
+                        if (result === 'wrong' && idx === 0) {
+                            // Richtige Antwort hervorheben, wenn falsch beantwortet
+                            btn.classList.add('show-correct');
+                        }
+                        // Bei falscher Antwort die gewählte falsche Antwort markieren
+                        // Dazu müssten wir die gewählte Antwort speichern – hier nur einfache Logik:
+                        // Wenn result === 'wrong' und idx !== 0, dann war es die falsche Auswahl.
+                        // Da wir aber nicht speichern, welche Antwort gewählt wurde, zeigen wir nur die richtige an.
+                    }
+
+                    btn.addEventListener('click', function(e) {
+                        if (isAnswered) return;
+                        handleAnswer(idx);
+                    });
+
+                    answersContainer.appendChild(btn);
+                });
+
+                // Feedback ausblenden
+                feedback.className = 'feedback';
+                feedback.textContent = '';
+
+                // Counter
+                qCounter.textContent = (currentIndex + 1) + ' / ' + fragen.length;
+
+                // Buttons
+                prevBtn.disabled = (currentIndex === 0);
+                nextBtn.disabled = (currentIndex === fragen.length - 1);
+
+                // Wenn bereits beantwortet, alle Antworten deaktivieren
+                if (result) {
+                    isAnswered = true;
+                    answeredId = frage.id;
+                    document.querySelectorAll('.answer-btn').forEach(b => b.classList.add('disabled'));
+                    // Feedback anzeigen
+                    if (result === 'correct') {
+                        feedback.className = 'feedback visible correct';
+                        feedback.textContent = '✅ Richtig!';
+                    } else {
+                        feedback.className = 'feedback visible wrong';
+                        feedback.textContent = '❌ Falsch. Die richtige Antwort ist a).';
+                    }
+                }
+            }
+
+            // -------- Antwort auswerten --------
+            function handleAnswer(idx) {
+                if (isAnswered) return;
+                const frage = getCurrentFrage();
+                if (!frage) return;
+
+                const isCorrect = (idx === 0); // Antwort a ist immer richtig
+                const result = isCorrect ? 'correct' : 'wrong';
+                const frageId = frage.id;
+
+                // Fortschritt speichern
+                setQuestionResult(currentCategory, frageId, result);
+
+                // Status setzen
+                isAnswered = true;
+                answeredId = frageId;
+
+                // Alle Antwort-Buttons deaktivieren und farblich markieren
+                const btns = document.querySelectorAll('.answer-btn');
+                btns.forEach((btn, i) => {
+                    btn.classList.add('disabled');
+                    if (i === 0) {
+                        btn.classList.add('correct-answer');
+                    }
+                    if (!isCorrect && i === idx) {
+                        btn.classList.add('wrong-answer');
+                    }
+                    if (i === 0 && !isCorrect) {
+                        btn.classList.add('show-correct');
+                    }
+                });
+
+                // Status anzeigen
+                qStatus.className = 'q-status';
+                if (isCorrect) {
+                    qStatus.textContent = '✅ richtig';
+                    qStatus.classList.add('correct');
+                } else {
+                    qStatus.textContent = '❌ falsch';
+                    qStatus.classList.add('wrong');
+                }
+
+                // Feedback
+                feedback.className = 'feedback visible ' + (isCorrect ? 'correct' : 'wrong');
+                if (isCorrect) {
+                    feedback.textContent = '✅ Richtig!';
+                } else {
+                    feedback.textContent = '❌ Falsch. Die richtige Antwort ist a).';
+                }
+
+                // Fortschrittsbalken aktualisieren
+                updateProgressBars();
+            }
+
+            // -------- Navigation --------
+            function goToIndex(newIndex) {
+                const fragen = getCurrentFragen();
+                if (newIndex < 0) newIndex = 0;
+                if (newIndex >= fragen.length) newIndex = fragen.length - 1;
+                currentIndex = newIndex;
+                renderQuestion();
+            }
+
+            function nextQuestion() {
+                const fragen = getCurrentFragen();
+                if (currentIndex < fragen.length - 1) {
+                    goToIndex(currentIndex + 1);
+                }
+            }
+
+            function prevQuestion() {
+                if (currentIndex > 0) {
+                    goToIndex(currentIndex - 1);
+                }
+            }
+
+            // -------- Kategorie wechseln --------
+            function switchCategory(cat) {
+                if (!CATEGORIES[cat]) return;
+                currentCategory = cat;
+                currentIndex = 0;
+
+                // Buttons aktualisieren
+                document.querySelectorAll('.category-nav .btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.category === cat);
+                });
+
+                renderQuestion();
+                updateProgressBars();
+            }
+
+            // -------- Fortschritt zurücksetzen --------
+            function resetAllProgress() {
+                if (!confirm('Möchten Sie den gesamten Lernfortschritt wirklich zurücksetzen?')) return;
+                progress = {};
+                saveProgress();
+                updateProgressBars();
+                renderQuestion();
+            }
+
+            // -------- Initialisierung --------
+            function init() {
+                // Progress laden
+                loadProgress();
+
+                // Kategorie-Buttons
+                document.querySelectorAll('.category-nav .btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const cat = this.dataset.category;
+                        if (cat && CATEGORIES[cat]) {
+                            switchCategory(cat);
+                        }
+                    });
+                });
+
+                // Navigations-Buttons
+                prevBtn.addEventListener('click', prevQuestion);
+                nextBtn.addEventListener('click', nextQuestion);
+
+                // Tastatur
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        nextQuestion();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        prevQuestion();
+                    }
+                });
+
+                // Reset
+                resetBtn.addEventListener('click', resetAllProgress);
+
+                // Erste Kategorie anzeigen
+                switchCategory('basis');
+            }
+
+            // -------- Start --------
+            // Prüfen, ob die Fragen geladen sind
+            if (typeof fragenBasis === 'undefined' ||
+                typeof fragenBinnen === 'undefined' ||
+                typeof fragenSee === 'undefined') {
+                console.warn('Einige Fragen-Dateien fehlen. Bitte prüfen Sie die Einbindung.');
+            }
+
+            // Starten, sobald DOM bereit
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+        })();
+    </script>
+
+</body>
+</html>
