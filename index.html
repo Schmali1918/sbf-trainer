@@ -522,6 +522,15 @@
         (function() {
             'use strict';
 
+            // -------- Hilfsfunktionen: Shuffle (Fisher-Yates) --------
+            function shuffleArray(arr) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+
             // -------- Konfiguration --------
             const STORAGE_KEY = 'sbf_learn_progress';
 
@@ -529,17 +538,17 @@
             const CATEGORIES = {
                 basis: {
                     name: 'Basis',
-                    fragen: typeof fragenBasis !== 'undefined' ? fragenBasis : [],
+                    fragen: typeof fragenBasis !== 'undefined' ? fragenBasis.slice() : [],
                     bilder: typeof imageMapBasis !== 'undefined' ? imageMapBasis : {}
                 },
                 binnen: {
                     name: 'Binnen',
-                    fragen: typeof fragenBinnen !== 'undefined' ? fragenBinnen : [],
+                    fragen: typeof fragenBinnen !== 'undefined' ? fragenBinnen.slice() : [],
                     bilder: typeof imageMapBinnen !== 'undefined' ? imageMapBinnen : {}
                 },
                 see: {
                     name: 'See',
-                    fragen: typeof fragenSee !== 'undefined' ? fragenSee : [],
+                    fragen: typeof fragenSee !== 'undefined' ? fragenSee.slice() : [],
                     bilder: typeof imageMapSee !== 'undefined' ? imageMapSee : {}
                 }
             };
@@ -549,7 +558,14 @@
             let currentIndex = 0;
             let progress = {}; // { category: { frageId: 'correct'|'wrong' } }
             let isAnswered = false;
-            let answeredId = null; // ID der aktuell beantworteten Frage
+            let answeredId = null;
+
+            // Für jede Kategorie speichern wir die gemischte Reihenfolge der Fragen-IDs
+            let shuffledOrder = {};
+
+            // Für die aktuelle Frage: die gemischten Antworten und den Index der richtigen Antwort
+            let currentShuffledAnswers = [];
+            let currentCorrectIndex = -1;
 
             // DOM-Referenzen
             const $ = (sel) => document.querySelector(sel);
@@ -581,8 +597,23 @@
                 return CATEGORIES[cat]?.bilder || {};
             }
 
+            // Gibt die gemischte Fragenliste für eine Kategorie zurück
+            function getShuffledFragen(cat) {
+                const fragen = getFragen(cat);
+                if (!shuffledOrder[cat]) {
+                    // IDs sammeln und mischen
+                    const ids = fragen.map(f => f.id);
+                    shuffledOrder[cat] = shuffleArray(ids.slice());
+                }
+                // Sortierte Liste nach der gemischten Reihenfolge
+                const order = shuffledOrder[cat];
+                const fMap = {};
+                fragen.forEach(f => { fMap[f.id] = f; });
+                return order.map(id => fMap[id]).filter(f => f !== undefined);
+            }
+
             function getCurrentFragen() {
-                return getFragen(currentCategory);
+                return getShuffledFragen(currentCategory);
             }
 
             function getCurrentBilder() {
@@ -725,12 +756,23 @@
                     qImage.src = '';
                 }
 
-                // Antworten
+                // ---- Antworten mischen ----
+                const originalAnswers = frage.antworten || [];
+                // Erstelle Array mit Indizes
+                const indices = originalAnswers.map((_, idx) => idx);
+                shuffleArray(indices);
+                // Die richtige Antwort ist immer Index 0 im Original
+                const correctOriginalIndex = 0;
+                // Finde den neuen Index der richtigen Antwort
+                currentCorrectIndex = indices.indexOf(correctOriginalIndex);
+                // Baue die gemischte Antwortliste
+                currentShuffledAnswers = indices.map(idx => originalAnswers[idx]);
+
+                // Antwort-Buttons erzeugen
                 answersContainer.innerHTML = '';
-                const antworten = frage.antworten || [];
                 const labels = ['a', 'b', 'c', 'd'];
 
-                antworten.forEach((text, idx) => {
+                currentShuffledAnswers.forEach((text, idx) => {
                     const btn = document.createElement('button');
                     btn.className = 'answer-btn';
                     btn.dataset.index = idx;
@@ -739,18 +781,13 @@
                     // Wenn bereits beantwortet, Zustand anzeigen
                     if (result) {
                         btn.classList.add('disabled');
-                        const isCorrect = (idx === 0); // Antwort a ist immer richtig
+                        const isCorrect = (idx === currentCorrectIndex);
                         if (isCorrect) {
                             btn.classList.add('correct-answer');
                         }
-                        if (result === 'wrong' && idx === 0) {
-                            // Richtige Antwort hervorheben, wenn falsch beantwortet
+                        if (result === 'wrong' && idx === currentCorrectIndex) {
                             btn.classList.add('show-correct');
                         }
-                        // Bei falscher Antwort die gewählte falsche Antwort markieren
-                        // Dazu müssten wir die gewählte Antwort speichern – hier nur einfache Logik:
-                        // Wenn result === 'wrong' und idx !== 0, dann war es die falsche Auswahl.
-                        // Da wir aber nicht speichern, welche Antwort gewählt wurde, zeigen wir nur die richtige an.
                     }
 
                     btn.addEventListener('click', function(e) {
@@ -777,13 +814,12 @@
                     isAnswered = true;
                     answeredId = frage.id;
                     document.querySelectorAll('.answer-btn').forEach(b => b.classList.add('disabled'));
-                    // Feedback anzeigen
                     if (result === 'correct') {
                         feedback.className = 'feedback visible correct';
                         feedback.textContent = '✅ Richtig!';
                     } else {
                         feedback.className = 'feedback visible wrong';
-                        feedback.textContent = '❌ Falsch. Die richtige Antwort ist a).';
+                        feedback.textContent = '❌ Falsch. Die richtige Antwort ist ' + labels[currentCorrectIndex] + '.';
                     }
                 }
             }
@@ -794,7 +830,8 @@
                 const frage = getCurrentFrage();
                 if (!frage) return;
 
-                const isCorrect = (idx === 0); // Antwort a ist immer richtig
+                // Die richtige Antwort ist immer die, die im Original an Index 0 war
+                const isCorrect = (idx === currentCorrectIndex);
                 const result = isCorrect ? 'correct' : 'wrong';
                 const frageId = frage.id;
 
@@ -807,15 +844,16 @@
 
                 // Alle Antwort-Buttons deaktivieren und farblich markieren
                 const btns = document.querySelectorAll('.answer-btn');
+                const labels = ['a', 'b', 'c', 'd'];
                 btns.forEach((btn, i) => {
                     btn.classList.add('disabled');
-                    if (i === 0) {
+                    if (i === currentCorrectIndex) {
                         btn.classList.add('correct-answer');
                     }
                     if (!isCorrect && i === idx) {
                         btn.classList.add('wrong-answer');
                     }
-                    if (i === 0 && !isCorrect) {
+                    if (i === currentCorrectIndex && !isCorrect) {
                         btn.classList.add('show-correct');
                     }
                 });
@@ -835,7 +873,7 @@
                 if (isCorrect) {
                     feedback.textContent = '✅ Richtig!';
                 } else {
-                    feedback.textContent = '❌ Falsch. Die richtige Antwort ist a).';
+                    feedback.textContent = '❌ Falsch. Die richtige Antwort ist ' + labels[currentCorrectIndex] + '.';
                 }
 
                 // Fortschrittsbalken aktualisieren
@@ -870,6 +908,10 @@
                 currentCategory = cat;
                 currentIndex = 0;
 
+                // Bei Kategoriewechsel die gemischte Reihenfolge neu generieren
+                // (damit bei jedem Aufruf eine andere Reihenfolge entsteht)
+                shuffledOrder[cat] = null; // zurücksetzen, wird beim nächsten Aufruf neu generiert
+
                 // Buttons aktualisieren
                 document.querySelectorAll('.category-nav .btn').forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.category === cat);
@@ -884,6 +926,8 @@
                 if (!confirm('Möchten Sie den gesamten Lernfortschritt wirklich zurücksetzen?')) return;
                 progress = {};
                 saveProgress();
+                // Auch die gemischten Reihenfolgen zurücksetzen, damit beim Neustart alles neu gemischt wird
+                shuffledOrder = {};
                 updateProgressBars();
                 renderQuestion();
             }
@@ -926,14 +970,12 @@
             }
 
             // -------- Start --------
-            // Prüfen, ob die Fragen geladen sind
             if (typeof fragenBasis === 'undefined' ||
                 typeof fragenBinnen === 'undefined' ||
                 typeof fragenSee === 'undefined') {
                 console.warn('Einige Fragen-Dateien fehlen. Bitte prüfen Sie die Einbindung.');
             }
 
-            // Starten, sobald DOM bereit
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', init);
             } else {
